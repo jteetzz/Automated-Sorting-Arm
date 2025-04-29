@@ -1,5 +1,11 @@
 import cv2
 import numpy as np
+import serial
+import time
+
+# Connect to the Arduino
+arduino = serial.Serial('COM3', 9600)
+time.sleep(2)  # Wait for the connection to establish
 
 # limited to cube colors
 COLOR_NAMES = {
@@ -47,6 +53,7 @@ def detect_squares(frame, min_area=1500, square_only=True):
         epsilon = 0.02 * cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, epsilon, True)
 
+        # Cube detected
         if len(approx) == 4 and cv2.isContourConvex(approx):
             x, y, w, h = cv2.boundingRect(approx)
             aspect_ratio = float(w) / h
@@ -67,6 +74,10 @@ def detect_squares(frame, min_area=1500, square_only=True):
 
             # Get closest color name (restricted to 5)
             color_name = closest_color_name(mean_color)
+
+            # Send the color name to Arduino
+            msg = f"start:{color_name}\n"
+            arduino.write(msg.encode())
 
             label = f"{shape_type} - {color_name}"
             cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
